@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>坦克大战</title>
+    <link rel="stylesheet" href="./css/index.css">
+</head>
+<body>
+<div class="header"><h2>坦克大战</h2></div>
+<div class="box" id="box">
+    <canvas id="game"></canvas>
+    <div id="head"></div>
+    <button type="button" id="btnStart">开始游戏</button>
+    <div id="ifo">
+        <h2>按键说明</h2>
+        <div id="text">
+            <br>
+            P:暂停游戏<br/>
+            p1：<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;W、S、A、D：上、下、左、右<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;J：发射子弹<br/>
+            p2：<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;方向键：上、下、左、右<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;小键盘0：发射子弹<br/>
+            <button id="but2">单人模式</button>
+            <button id="but3">双人模式</button>
+            <button id="but4_1">友方伤害开关:off</button>
+            <button id="but4_2">友方伤害开关:on</button>
+            <button id="but5_1">碰撞伤害开关:off</button>
+            <button id="but5_2">碰撞伤害开关:on</button>
+        </div>
+    </div>
+</div>
+</body>
+<script src="js/hero1.js"></script>
+<script src="js/hero2.js"></script>
+<script src="js/imgList.js"></script>
+<script src="js/bullet.js"></script>
+<script src="js/enemy.js"></script>
+<script src="js/boom.js"></script>
+<script>
+    var box = document.getElementById("box");
+    var game = document.getElementById("game");
+    game.width = box.clientWidth;
+    game.height = box.clientHeight;
+
+    //获取画笔
+    var ctx = game.getContext("2d");
+
+    //准备资源图片
+    var assets = [];
+
+    //开局设置
+    var teamHurt = false;
+    var meetHurt = false;
+
+    //加载资源
+    function loadAssets() {
+        var count = 0; //记录已经加载的图片数量
+        for (var i = 0; i < imgList.length; i++) {
+            var img = new Image();
+            img.src = imgList[i];
+            assets.push(img);
+            img.onload = function () {
+                count++;
+                if (count == imgList.length) {
+                    console.log("ok");
+                    // 显示按钮
+                    var btnStart = document.getElementById("btnStart");
+                    btnStart.style.display = "block";
+                    // 点击按钮后
+                    btnStart.onclick = function () {
+                        // 删除按钮
+                        btnStart.remove();
+                        var ifo = document.getElementById("ifo");
+                        ifo.style.display = "block";
+                        var but2 = document.getElementById("but2");
+                        var but3 = document.getElementById("but3");
+                        var but4_1 = document.getElementById("but4_1");
+                        var but4_2 = document.getElementById("but4_2");
+                        var but5_1 = document.getElementById("but5_1");
+                        var but5_2 = document.getElementById("but5_2");
+                        but2.onclick = function () {
+                            ifo.remove();
+                            startGame1();
+                            var head = document.getElementById("head");
+                            head.style.display = "block";
+                        }
+                        but3.onclick = function () {
+                            ifo.remove();
+                            startGame2();
+                            var head = document.getElementById("head");
+                            head.style.display = "block";
+                        }
+                        but4_1.onclick = function () {
+                            but4_1.style.display = "none";
+                            but4_2.style.display = "block";
+                            teamHurt = true;
+                        }
+                        but4_2.onclick = function () {
+                            but4_2.style.display = "none";
+                            but4_1.style.display = "block";
+                            teamHurt = false;
+                        }
+                        but5_1.onclick = function () {
+                            but5_1.style.display = "none";
+                            but5_2.style.display = "block";
+                            meetHurt = true;
+                        }
+                        but5_2.onclick = function () {
+                            but5_2.style.display = "none";
+                            but5_1.style.display = "block";
+                            meetHurt = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    loadAssets();
+
+    var p1 = null;//玩家一
+    var p2 = null;//玩家二
+    var enemy = null;//敌人
+    var enemyList = [];//存放敌人
+    var bulletList1 = [];//存放p1子弹
+    var bulletList2 = [];//存放p2子弹
+    var bulletList3 = [];//存放敌人子弹
+    var boomList = [];//爆炸集合
+    var p1die = [];
+    var keySet = new Set();//存放按下的按键
+    var isGame = true;//游戏状态
+
+    //双人模式
+    function startGame2() {
+        //加载玩家
+        p1 = new Hero1();
+        p1.draw(ctx);
+        p2 = new Hero2();
+        p2.draw(ctx);
+        //监听键盘按键
+        document.onkeydown = function (event) {
+            keySet.add(event.keyCode);
+            //p1开火，空格
+            if (event.keyCode == 74 && p1.isFire == false) {
+                p1.fire();
+                p1.isFire = true;
+                setTimeout(() => {
+                    p1.isFire = false;
+                }, 200);
+                //攻击的音效
+                var audio1 = new Audio();
+                audio1.volume = 0.2;
+                audio1.src = "./music/firepreview.mp3";
+                audio1.play();
+            }
+            //p2开火，回车
+            if (event.keyCode == 96 && p2.isFire == false) {
+                p2.fire();
+                p2.isFire = true;
+                setTimeout(() => {
+                    p2.isFire = false;
+                }, 200);
+                //攻击的音效
+                var audio2 = new Audio();
+                audio2.volume = 0.2;
+                audio2.src = "./music/firepreview.mp3";
+                audio2.play();
+            }
+            //暂停游戏,P
+            if (event.keyCode == 80 && isGame == true) {
+                clearInterval(update);
+                isGame = false;
+            } else if (event.keyCode == 27 && isGame == false) {
+                update = setInterval(fn, 21);
+                isGame = true;
+            }
+        }
+
+        //清除按键
+        document.onkeyup = function (event) {
+            keySet.delete(event.keyCode);
+        }
+
+        //定时器刷新屏幕
+        var update = setInterval(fn, 20);
+
+        function fn() {
+            ctx.clearRect(0, 0, game.width, game.height);
+            p1.draw(ctx);
+            p2.draw(ctx);
+            //画玩家子弹
+            for (var a = 0; a < bulletList1.length; a++) {
+                bulletList1[a].draw(ctx);
+            }
+            for (var b = 0; b < bulletList2.length; b++) {
+                bulletList2[b].draw(ctx);
+            }
+            if (teamHurt) {
+                p1isHitP2();
+                p2isHitP1();
+                B1andB2();
+            }
+            //画出敌方坦克和子弹
+            addEnemy();
+            for (var i = 0; i < enemyList.length; i++) {
+                enemyList[i].draw(ctx);
+            }
+            for (var j = 0; j < bulletList3.length; j++) {
+                bulletList3[j].draw(ctx);
+            }
+            //绘制爆炸的动画对象
+            for (var k = 0; k < boomList.length; k++) {
+                boomList[k].draw(ctx);
+            }
+            //检测碰撞
+            p1isHit();
+            p2isHit();
+            enemyIsHitP1();
+            enemyIsHitP2();
+            if (meetHurt) {
+                enemyIsMeetP1();
+                enemyIsMeetP2();
+            }
+            B1andB3();
+            B2andB3();
+        }
+    }
+
+    //单人模式
+    function startGame1() {
+        //加载玩家
+        p1 = new Hero1();
+        p1.draw(ctx);
+        //监听键盘按键
+        document.onkeydown = function (event) {
+            keySet.add(event.keyCode);
+            //p1开火，空格
+            if (event.keyCode == 74 && p1.isFire == false) {
+                p1.fire();
+                //给子弹加间隔时间，0.2秒
+                p1.isFire = true
+                setTimeout(() => {
+                    p1.isFire = false;
+                }, 200);
+                //攻击的音效
+                var audio = new Audio();
+                audio.volume = 0.2;
+                audio.src = "./music/firepreview.mp3";
+                audio.play();
+            }
+            //暂停游戏,P
+            if (event.keyCode == 80 && isGame == true) {
+                clearInterval(update);
+                isGame = false;
+            } else if (event.keyCode == 80 && isGame == false) {
+                update = setInterval(fn, 21);
+                isGame = true
+            }
+        }
+
+        //清除按键
+        document.onkeyup = function (event) {
+            keySet.delete(event.keyCode);
+        }
+
+        //定时器刷新屏幕
+        var update = setInterval(fn, 20);
+
+        function fn() {
+            ctx.clearRect(0, 0, game.width, game.height);
+            p1.draw(ctx);
+            //画p1子弹
+            for (var a = 0; a < bulletList1.length; a++) {
+                bulletList1[a].draw(ctx);
+            }
+            //画爆炸
+            for (var b = 0; b < boomList.length; b++) {
+                boomList[b].draw(ctx);
+            }
+            //画出敌人小兵
+            addEnemy();
+            for (var c = 0; c < enemyList.length; c++) {
+                enemyList[c].draw(ctx);
+            }
+            //画敌人子弹
+            for (var d = 0; d < bulletList3.length; d++) {
+
+                bulletList3[d].draw(ctx);
+            }
+            p1isHit();
+            if (meetHurt) {
+                enemyIsHitP1();
+                enemyIsMeetP1();
+            }
+            B1andB3();
+        }
+    }
+
+    //添加敌人
+    function addEnemy() {
+        if (enemyList.length < 10) {
+            var count = 10 - enemyList.length;
+            for (var i = 0; i < count; i++) {
+                var e = new Enemy();
+                enemyList.push(e);
+            }
+        }
+    }
+
+    //检测碰撞
+    function checkCrash(a, b) {
+        return !(b.x + b.width < a.x ||
+            a.x + a.width < b.x ||
+            b.y + b.height < a.y ||
+            a.y + a.height < b.y);
+    }
+
+    //检测p1是否打中敌人
+    function p1isHit() {
+        for (var i = enemyList.length - 1; i >= 0; i--) {
+            for (var j = bulletList1.length - 1; j >= 0; j--) {
+                var a = enemyList[i];
+                var b = bulletList1[j];
+                var result = checkCrash(a, b);
+                if (result) {
+                    enemyList.splice(i, 1);
+                    bulletList1.splice(j, 1);
+                    p1.score += 1;
+                    if (p1.score >= 30) {
+                        alert("p1赢了！")
+                        p1 = new Hero1();
+                        p1.score = 0;
+                    }
+                    var c = new Boom(b.x, b.y);
+                    boomList.push(c);
+                    break;
+                }
+            }
+        }
+    }
+
+    //检测p1是否打中p2
+    function p1isHitP2() {
+        for (var i = bulletList1.length - 1; i >= 0; i--) {
+            var a = bulletList1[i];
+            var result = checkCrash(a, p2);
+            if (result) {
+                bulletList1.splice(i, 1);
+                p2.hp -= 33;
+                if (p2.hp <= 0) {
+                    var c = new Boom(p2.x, p2.y);
+                    boomList.push(c);
+                    p2 = new Hero2();
+                }
+                break;
+            }
+        }
+    }
+
+    //检测p2是否打中敌人
+    function p2isHit() {
+        for (var i = enemyList.length - 1; i >= 0; i--) {
+            for (var j = bulletList2.length - 1; j >= 0; j--) {
+                var a = bulletList2[j];
+                var b = enemyList[i];
+                var result = checkCrash(a, b);
+                if (result) {
+                    enemyList.splice(i, 1);
+                    bulletList2.splice(j, 1);
+                    p2.score += 1;
+                    if (p2.score >= 30) {
+                        alert("p2赢了！")
+                        p2 = new Hero2();
+                        p2.score = 0;
+                    }
+                    var c = new Boom(a.x, a.y);
+                    boomList.push(c);
+                    break;
+                }
+            }
+        }
+    }
+
+    //检测p2是否打中p1
+    function p2isHitP1() {
+        for (var i = bulletList2.length - 1; i >= 0; i--) {
+            var a = bulletList2[i];
+            var result = checkCrash(a, p1);
+            if (result) {
+                bulletList2.splice(i, 1);
+                p1.hp -= 33;
+                if (p1.hp <= 0) {
+                    var c = new Boom(p1.x, p1.y);
+                    boomList.push(c);
+                    p1 = new Hero1();
+                }
+                break;
+            }
+        }
+    }
+
+    //检测敌人子弹是否打中p1
+    function enemyIsHitP1() {
+        for (var i = bulletList3.length - 1; i >= 0; i--) {
+            var b = bulletList3[i];
+            var result = checkCrash(b, p1);
+            if (result) {
+                bulletList3.splice(i, 1);
+                p1.hp -= 33;
+                if (p1.hp <= 0) {
+                    var c = new Boom(p1.x, p1.y);
+                    boomList.push(c);
+                    p1 = new Hero1();
+                }
+                break;
+            }
+        }
+    }
+
+    //检测敌人子弹是否打中p2
+    function enemyIsHitP2() {
+        for (var i = bulletList3.length - 1; i >= 0; i--) {
+            var b = bulletList3[i];
+            var result = checkCrash(b, p2);
+            if (result) {
+                bulletList3.splice(i, 1);
+                p2.hp -= 33;
+                if (p2.hp <= 0) {
+                    var c = new Boom(p2.x, p2.y);
+                    boomList.push(c);
+                    p2 = new Hero2();
+                }
+                break;
+            }
+        }
+    }
+
+    //检测敌方是否碰撞到p1
+    function enemyIsMeetP1() {
+        for (var i = enemyList.length - 1; i >= 0; i--) {
+            var b = enemyList[i];
+            var result = checkCrash(b, p1);
+            if (result) {
+                p1.hp -= 1;
+                if (p1.hp <= 0) {
+                    var c = new Boom(p1.x, p1.y);
+                    boomList.push(c);
+                    p1 = new Hero1();
+                    p1die.length += 1;
+                }
+                break;
+            }
+        }
+    }
+
+    //检测敌方是否碰撞到p2
+    function enemyIsMeetP2() {
+        for (var i = enemyList.length - 1; i >= 0; i--) {
+            var b = enemyList[i];
+            var result = checkCrash(b, p2);
+            if (result) {
+                p2.hp -= 1;
+                if (p2.hp <= 0) {
+                    var c = new Boom(p2.x, p2.y);
+                    boomList.push(c);
+                    p2 = new Hero2();
+                }
+                break;
+            }
+        }
+    }
+
+    //检测玩家子弹是否碰撞
+    function B1andB2() {
+        for (var i = bulletList1.length - 1; i >= 0; i--) {
+            for (var j = bulletList2.length - 1; j >= 0; j--) {
+                var a = bulletList1[i];
+                var b = bulletList2[i];
+                var result = checkCrash(a, b);
+                if (result) {
+                    bulletList1.splice(i, 1);
+                    bulletList2.splice(j, 1);
+                    var c = new Boom(a.x, a.y);
+                    boomList.push(c);
+                    break;
+                }
+            }
+        }
+    }
+
+    //检测p1子弹是否碰撞敌人子弹
+    function B1andB3() {
+        for (var i = bulletList1.length - 1; i >= 0; i--) {
+            for (var j = bulletList3.length - 1; j >= 0; j--) {
+                var a = bulletList1[i];
+                var b = bulletList3[j];
+                var result = checkCrash(a, b);
+                if (result) {
+                    bulletList1.splice(i, 1);
+                    bulletList3.splice(j, 1);
+                    var c = new Boom(a.x, a.y);
+                    boomList.push(c);
+                    break;
+                }
+            }
+        }
+    }
+
+    //检测p2子弹是否碰撞敌人子弹
+    function B2andB3() {
+        for (var i = bulletList2.length - 1; i >= 0; i--) {
+            for (var j = bulletList3.length - 1; j >= 0; j--) {
+                var a = bulletList2[i];
+                var b = bulletList3[j];
+                var result = checkCrash(a, b);
+                if (result) {
+                    bulletList2.splice(i, 1);
+                    bulletList3.splice(j, 1);
+                    var c = new Boom(a.x, a.y);
+                    boomList.push(c);
+                    break;
+                }
+            }
+        }
+    }
+</script>
+</html>

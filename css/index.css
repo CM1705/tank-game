@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+}
+
+.header {
+    height: 55px;
+    line-height: 55px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: saddlebrown;
+    background-color: rosybrown;
+}
+
+.box {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 55px;
+    bottom: 0;
+}
+
+#head {
+    position: absolute;
+    border: 3px solid black;
+    width: 100%;
+    top: 92px;
+    display: none;
+
+}
+
+#game {
+    background-color: slategrey;
+}
+
+#start {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#btnStart {
+    width: 180px;
+    height: 45px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 200px;
+    margin: 0 auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 100px 1px white;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    display: none;
+    color: white;
+}
+
+#btnStart:hover {
+    box-shadow: 0 0 15px 5px;
+    color: lightslategray;
+}
+
+#ifo {
+    position: absolute;
+    top: 30px;
+    width: 418px;
+    height: 418px;
+    left: 50%;
+    margin-left: -200px;
+    color: green;
+    background-color: #FAEBD7;
+    display: none;
+}
+
+h2 {
+    text-align: center;
+}
+
+#text {
+    position: relative;
+    left: 70px;
+}
+
+#but2 {
+    position: relative;
+    width: 100px;
+    height: 30px;
+    top: 50px;
+    left: 75px;
+}
+
+#but3 {
+    position: relative;
+    width: 100px;
+    height: 30px;
+    top: 100px;
+    left: -30px;
+}
+
+#but4_1 {
+    position: relative;
+    width: 120px;
+    height: 20px;
+    top: 130px;
+    left: -20px;
+    font-size: 10px;
+    display: block;
+}
+
+#but4_2 {
+    position: relative;
+    width: 120px;
+    height: 20px;
+    top: 130px;
+    left: -20px;
+    font-size: 10px;
+    display: none;
+}
+
+#but5_1 {
+    position: relative;
+    width: 120px;
+    height: 20px;
+    top: 108px;
+    left: 150px;
+    font-size: 10px;
+    display: block;
+}
+
+#but5_2 {
+    position: relative;
+    width: 120px;
+    height: 20px;
+    top: 108px;
+    left: 150px;
+    font-size: 10px;
+    display: none;
+}
